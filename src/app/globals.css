@@ -1,0 +1,287 @@
+@import "tailwindcss";
+
+/* ============================================================
+   HUTCH DESIGN SYSTEM — TOKENS (Light mode only)
+   ============================================================
+   Color philosophy:
+   - Foreground: warm slate (unifies with bg, no cool/warm split)
+   - Background: ivory cream — clearly off-white, editorial warmth
+   - Accent: clay — coral/burnt-orange, anthropic-adjacent
+   - Status hues share chroma=0.10, lightness=0.68 for harmony
+   ============================================================ */
+
+:root {
+  /* ---------- Neutrals (warm sand) ---------- */
+  --sand-50:  oklch(0.975 0.008 85);
+  --sand-100: oklch(0.940 0.010 85);
+  --sand-150: oklch(0.920 0.012 85);
+  --sand-200: oklch(0.890 0.013 85);
+  --sand-300: oklch(0.825 0.013 85);
+  --sand-400: oklch(0.700 0.010 85);
+  --sand-500: oklch(0.555 0.006 85);
+  --sand-600: oklch(0.445 0.005 85);
+  --sand-700: oklch(0.295 0.004 85);
+  --sand-800: oklch(0.225 0.004 85);
+  --sand-900: oklch(0.175 0.003 85);
+  --sand-950: oklch(0.140 0.003 85);
+
+  /* ---------- Ink (warm fg to harmonize with bg) ---------- */
+  --ink-900: oklch(0.155 0.003 80);
+  --ink-700: oklch(0.295 0.004 80);
+  --ink-500: oklch(0.500 0.005 80);
+
+  /* ---------- Accent: clay (warm coral) ---------- */
+  --amber-50:  oklch(0.970 0.020 45);
+  --amber-100: oklch(0.935 0.045 42);
+  --amber-200: oklch(0.875 0.080 40);
+  --amber-300: oklch(0.795 0.115 39);
+  --amber-400: oklch(0.730 0.140 38);
+  --amber-500: oklch(0.665 0.143 38);
+  --amber-600: oklch(0.585 0.135 37);
+  --amber-700: oklch(0.500 0.120 36);
+  --amber-800: oklch(0.405 0.090 34);
+  --amber-900: oklch(0.310 0.065 32);
+
+  /* ---------- Status (harmonized at L=0.68, C=0.10) ---------- */
+  --teal-500:  oklch(0.680 0.100 200);
+  --teal-100:  oklch(0.940 0.030 200);
+  --teal-700:  oklch(0.480 0.090 200);
+
+  --moss-500:  oklch(0.680 0.100 145);
+  --moss-100:  oklch(0.940 0.030 145);
+  --moss-700:  oklch(0.470 0.090 145);
+
+  --rose-500:  oklch(0.680 0.130 25);
+  --rose-100:  oklch(0.940 0.035 25);
+  --rose-700:  oklch(0.500 0.130 25);
+
+  --honey-500: oklch(0.780 0.130 85);
+  --honey-100: oklch(0.950 0.035 85);
+  --honey-700: oklch(0.530 0.110 80);
+
+  --plum-500:  oklch(0.680 0.100 320);
+  --plum-100:  oklch(0.940 0.030 320);
+  --plum-700:  oklch(0.470 0.090 320);
+
+  /* ---------- Semantic ---------- */
+  --bg:            var(--sand-50);
+  --bg-raised:     #ffffff;
+  --bg-sunken:     var(--sand-100);
+  --bg-hover:      var(--sand-150);
+  --bg-selected:   var(--amber-50);
+
+  --fg:            var(--ink-900);
+  --fg-muted:      var(--sand-600);
+  --fg-subtle:     var(--sand-500);
+  --fg-faint:      var(--sand-400);
+  --fg-on-accent:  #ffffff;
+
+  --border:        var(--sand-200);
+  --border-strong: var(--sand-300);
+  --border-focus:  var(--amber-500);
+
+  --accent:        var(--amber-500);
+  --accent-hover:  var(--amber-600);
+  --accent-press:  var(--amber-700);
+  --accent-soft:   var(--amber-100);
+  --accent-fg:     #ffffff;
+
+  /* ---------- Typography ---------- */
+  --font-sans: var(--font-geist-sans), -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+  --font-serif: ui-serif, Georgia, "Times New Roman", Times, serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+
+  --text-2xs: 11px;
+  --text-xs:  12px;
+  --text-sm:  13px;
+  --text-md:  14px;
+  --text-lg:  16px;
+  --text-xl:  18px;
+  --text-2xl: 22px;
+  --text-3xl: 28px;
+  --text-4xl: 36px;
+  --text-5xl: 48px;
+
+  --leading-tight: 1.2;
+  --leading-snug:  1.35;
+  --leading-base:  1.5;
+  --leading-loose: 1.7;
+
+  --tracking-tight:  -0.02em;
+  --tracking-normal: -0.005em;
+  --tracking-wide:    0.04em;
+
+  /* ---------- Spacing (4px grid) ---------- */
+  --sp-0:  0;
+  --sp-1:  2px;
+  --sp-2:  4px;
+  --sp-3:  8px;
+  --sp-4:  12px;
+  --sp-5:  16px;
+  --sp-6:  20px;
+  --sp-7:  24px;
+  --sp-8:  32px;
+  --sp-9:  40px;
+  --sp-10: 48px;
+  --sp-11: 64px;
+  --sp-12: 80px;
+
+  /* ---------- Radius ---------- */
+  --r-xs:   4px;
+  --r-sm:   6px;
+  --r-md:   8px;
+  --r-lg:   12px;
+  --r-xl:   16px;
+  --r-2xl:  20px;
+  --r-pill: 999px;
+
+  /* ---------- Shadows (warm-tinted) ---------- */
+  --shadow-xs: 0 1px 0 0 oklch(0.190 0.012 75 / 0.04);
+  --shadow-sm: 0 1px 2px 0 oklch(0.190 0.012 75 / 0.06), 0 0 0 1px oklch(0.190 0.012 75 / 0.04);
+  --shadow-md: 0 2px 4px -1px oklch(0.190 0.012 75 / 0.08), 0 4px 8px -2px oklch(0.190 0.012 75 / 0.06);
+  --shadow-lg: 0 4px 8px -2px oklch(0.190 0.012 75 / 0.10), 0 12px 24px -4px oklch(0.190 0.012 75 / 0.10);
+  --shadow-xl: 0 8px 16px -4px oklch(0.190 0.012 75 / 0.12), 0 24px 48px -8px oklch(0.190 0.012 75 / 0.14);
+  --shadow-focus: 0 0 0 3px oklch(0.680 0.140 55 / 0.25);
+  --shadow-focus-danger: 0 0 0 3px oklch(0.680 0.130 25 / 0.25);
+
+  /* ---------- Motion ---------- */
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-in:  cubic-bezier(0.55, 0, 1, 0.45);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --t-fast: 120ms;
+  --t-base: 180ms;
+  --t-slow: 280ms;
+
+  /* ---------- Layout ---------- */
+  --sidebar-w: 240px;
+  --topbar-h: 52px;
+}
+
+/* ============================================================
+   TAILWIND THEME MAPPING
+   ============================================================ */
+@theme inline {
+  /* Semantic colors */
+  --color-bg: var(--bg);
+  --color-bg-raised: var(--bg-raised);
+  --color-bg-sunken: var(--bg-sunken);
+  --color-bg-hover: var(--bg-hover);
+  --color-bg-selected: var(--bg-selected);
+
+  --color-fg: var(--fg);
+  --color-fg-muted: var(--fg-muted);
+  --color-fg-subtle: var(--fg-subtle);
+  --color-fg-faint: var(--fg-faint);
+  --color-fg-on-accent: var(--fg-on-accent);
+
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+  --color-border-focus: var(--border-focus);
+
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --color-accent-press: var(--accent-press);
+  --color-accent-soft: var(--accent-soft);
+  --color-accent-fg: var(--accent-fg);
+
+  /* Raw palette */
+  --color-sand-50: var(--sand-50);
+  --color-sand-100: var(--sand-100);
+  --color-sand-150: var(--sand-150);
+  --color-sand-200: var(--sand-200);
+  --color-sand-300: var(--sand-300);
+  --color-sand-400: var(--sand-400);
+  --color-sand-500: var(--sand-500);
+  --color-sand-600: var(--sand-600);
+  --color-sand-700: var(--sand-700);
+  --color-sand-800: var(--sand-800);
+  --color-sand-900: var(--sand-900);
+  --color-sand-950: var(--sand-950);
+
+  --color-ink-500: var(--ink-500);
+  --color-ink-700: var(--ink-700);
+  --color-ink-900: var(--ink-900);
+
+  --color-amber-50: var(--amber-50);
+  --color-amber-100: var(--amber-100);
+  --color-amber-200: var(--amber-200);
+  --color-amber-300: var(--amber-300);
+  --color-amber-400: var(--amber-400);
+  --color-amber-500: var(--amber-500);
+  --color-amber-600: var(--amber-600);
+  --color-amber-700: var(--amber-700);
+  --color-amber-800: var(--amber-800);
+  --color-amber-900: var(--amber-900);
+
+  --color-teal-100: var(--teal-100);
+  --color-teal-500: var(--teal-500);
+  --color-teal-700: var(--teal-700);
+
+  --color-moss-100: var(--moss-100);
+  --color-moss-500: var(--moss-500);
+  --color-moss-700: var(--moss-700);
+
+  --color-rose-100: var(--rose-100);
+  --color-rose-500: var(--rose-500);
+  --color-rose-700: var(--rose-700);
+
+  --color-honey-100: var(--honey-100);
+  --color-honey-500: var(--honey-500);
+  --color-honey-700: var(--honey-700);
+
+  --color-plum-100: var(--plum-100);
+  --color-plum-500: var(--plum-500);
+  --color-plum-700: var(--plum-700);
+
+  /* Typography */
+  --font-sans: var(--font-sans);
+  --font-serif: var(--font-serif);
+  --font-mono: var(--font-mono);
+
+  /* Radius */
+  --radius-xs: var(--r-xs);
+  --radius-sm: var(--r-sm);
+  --radius-md: var(--r-md);
+  --radius-lg: var(--r-lg);
+  --radius-xl: var(--r-xl);
+  --radius-2xl: var(--r-2xl);
+  --radius-pill: var(--r-pill);
+
+  /* Shadows */
+  --shadow-xs: var(--shadow-xs);
+  --shadow-sm: var(--shadow-sm);
+  --shadow-md: var(--shadow-md);
+  --shadow-lg: var(--shadow-lg);
+  --shadow-xl: var(--shadow-xl);
+  --shadow-focus: var(--shadow-focus);
+  --shadow-focus-danger: var(--shadow-focus-danger);
+}
+
+/* ============================================================
+   BASE STYLES
+   ============================================================ */
+body {
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--font-sans);
+  font-size: var(--text-md);
+  line-height: var(--leading-base);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  letter-spacing: var(--tracking-normal);
+}
+
+::selection {
+  background: var(--amber-200);
+  color: var(--ink-900);
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: var(--sand-300);
+  border-radius: 999px;
+  border: 2px solid var(--bg);
+}
+::-webkit-scrollbar-thumb:hover { background: var(--sand-400); }

@@ -1,0 +1,1 @@
+CREATE INDEX "idx_records_data_gin" ON "records" USING gin ("data");

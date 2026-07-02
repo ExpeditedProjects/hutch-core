@@ -1,0 +1,23 @@
+name: Production smoke
+
+on:
+  workflow_dispatch:
+    inputs:
+      base_url:
+        description: "Override target (defaults to https://app.hutchdb.com)"
+        required: false
+        type: string
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+      - run: npm ci
+      - run: npm run smoke
+        env:
+          SMOKE_BASE_URL: ${{ inputs.base_url }}

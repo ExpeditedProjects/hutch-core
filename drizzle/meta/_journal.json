@@ -1,0 +1,146 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1776288539225,
+      "tag": "0000_abandoned_old_lace",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1776350317277,
+      "tag": "0001_strong_skrulls",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1776350936698,
+      "tag": "0002_married_ezekiel_stane",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1776539553941,
+      "tag": "0003_next_azazel",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1776710400000,
+      "tag": "0004_auth_js_migration",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1776883200000,
+      "tag": "0005_better_auth_migration",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1777056000000,
+      "tag": "0006_mcp_oauth_tables",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1777228800000,
+      "tag": "0007_soft_deletes",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1777401600000,
+      "tag": "0008_schema_inference",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1778500800000,
+      "tag": "0009_mcp_refresh_tokens",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1778587200000,
+      "tag": "0010_oauth_session_client_name",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1778803200000,
+      "tag": "0011_collection_members",
+      "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1778889600000,
+      "tag": "0012_collection_invitations",
+      "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1778976000000,
+      "tag": "0013_collection_members_owner_role",
+      "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1779062400000,
+      "tag": "0014_invitation_delivery",
+      "breakpoints": true
+    },
+    {
+      "idx": 15,
+      "version": "7",
+      "when": 1780099200000,
+      "tag": "0015_organizations",
+      "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "7",
+      "when": 1780185600000,
+      "tag": "0016_mcp_refresh_org",
+      "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1780272000000,
+      "tag": "0017_drop_api_keys",
+      "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1780358400000,
+      "tag": "0018_org_invitation_lookup_index",
+      "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1780444800000,
+      "tag": "0019_invitation_email_lower_index",
+      "breakpoints": true
+    }
+  ]
+}

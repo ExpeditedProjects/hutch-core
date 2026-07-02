@@ -1,0 +1,42 @@
+services:
+  postgres:
+    image: postgres:18-alpine
+    environment:
+      POSTGRES_USER: "${POSTGRES_USER:-hutch}"
+      POSTGRES_PASSWORD: "${POSTGRES_PASSWORD:-hutch}"
+      POSTGRES_DB: "${POSTGRES_DB:-hutch}"
+    volumes:
+      - hutch-pg:/var/lib/postgresql/data
+    # No `ports:` mapping by design — the DB is only reachable from the
+    # `hutch` service on the internal network. If you need to expose it
+    # (e.g., for psql from the host), bind to 127.0.0.1 only AND set
+    # POSTGRES_PASSWORD to something stronger than the default.
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-hutch} -d ${POSTGRES_DB:-hutch}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  hutch:
+    build: .
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      HUTCH_DATABASE_URL: "postgresql://${POSTGRES_USER:-hutch}:${POSTGRES_PASSWORD:-hutch}@postgres:5432/${POSTGRES_DB:-hutch}"
+      HUTCH_ADMIN_EMAIL: "${HUTCH_ADMIN_EMAIL:-admin@hutch.local}"
+      HUTCH_ADMIN_PASSWORD: "${HUTCH_ADMIN_PASSWORD:?HUTCH_ADMIN_PASSWORD is required}"
+      HUTCH_SESSION_SECRET: "${HUTCH_SESSION_SECRET:?HUTCH_SESSION_SECRET is required (openssl rand -hex 32)}"
+      HUTCH_BASE_URL: "${HUTCH_BASE_URL:-http://localhost:3000}"
+      HUTCH_AUTO_SEED: "${HUTCH_AUTO_SEED:-true}"
+    ports:
+      - "${HUTCH_PORT:-3000}:3000"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:3000/login >/dev/null || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+
+volumes:
+  hutch-pg:

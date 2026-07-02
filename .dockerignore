@@ -1,0 +1,25 @@
+.git
+.next
+node_modules
+coverage
+*.log
+.DS_Store
+
+# secrets — never copy these into a layer
+.env*
+.vercel
+*.pem
+*.key
+id_rsa*
+.aws
+.npmrc
+secrets
+
+# project metadata not needed at runtime
+.claude
+.github
+README.md
+CONTRIBUTING.md
+CLA.md
+docs
+mcp-architecture-summary.html
