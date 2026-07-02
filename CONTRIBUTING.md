@@ -13,8 +13,8 @@ If you've configured [CLA Assistant](https://cla-assistant.io/) on this reposito
 ## Getting set up
 
 ```bash
-git clone https://github.com/ExpeditedProjects/hutch
-cd hutch
+git clone https://github.com/ExpeditedProjects/hutch-core
+cd hutch-core
 npm install
 cp .env.local.example .env.local
 # edit .env.local with your database URL and admin credentials

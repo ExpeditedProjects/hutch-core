@@ -9,8 +9,8 @@ This is the OSS engine. The multi-user product with a web dashboard, published v
 ## Quickstart with Docker
 
 ```bash
-git clone https://github.com/ExpeditedProjects/hutch
-cd hutch
+git clone https://github.com/ExpeditedProjects/hutch-core
+cd hutch-core
 
 # Optional: require a bearer token on every MCP call.
 export HUTCH_API_KEY="$(openssl rand -hex 32)"
@@ -23,8 +23,8 @@ Core migrates the database and boots on port 3000. The singleton user + personal
 ## Quickstart without Docker
 
 ```bash
-git clone https://github.com/ExpeditedProjects/hutch
-cd hutch
+git clone https://github.com/ExpeditedProjects/hutch-core
+cd hutch-core
 npm install
 cp .env.local.example .env.local
 # Required: HUTCH_DATABASE_URL
