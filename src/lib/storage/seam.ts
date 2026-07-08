@@ -22,6 +22,13 @@ export interface Storage {
 
 const DOWNLOAD_URL_EXPIRES_SECONDS = 900; // 15 minutes
 
+export class StorageNotConfiguredError extends Error {
+  constructor() {
+    super("Blob storage is not configured. Set the HUTCH_S3_* environment variables.");
+    this.name = "StorageNotConfiguredError";
+  }
+}
+
 type StorageConfig = {
   endpoint: string;
   bucket: string;
@@ -49,16 +56,15 @@ function readConfig(): StorageConfig | null {
 function requireConfig(): StorageConfig {
   const config = readConfig();
   if (!config) {
-    throw new Error(
-      "Blob storage is not configured. Set the HUTCH_S3_* environment variables."
-    );
+    throw new StorageNotConfiguredError();
   }
   return config;
 }
 
-// Keys never escape the bucket: relative, non-empty, no '..' segments.
+// Keys never escape the bucket: relative, non-empty, no '..' segments, and no
+// characters that could smuggle query strings or subresources into the S3 URL.
 function validateKey(key: string): string {
-  if (!key || key.startsWith("/") || key.includes("\0")) {
+  if (!key || key.startsWith("/") || /[\0?#%\\]/.test(key)) {
     throw new Error(`Invalid storage key: ${JSON.stringify(key)}`);
   }
   if (key.split("/").some((segment) => segment === "..")) {
@@ -118,6 +124,9 @@ export function getStorage(): Storage {
       const client = clientFor(config);
       const url = new URL(objectUrl(config, key));
       url.searchParams.set("X-Amz-Expires", String(DOWNLOAD_URL_EXPIRES_SECONDS));
+      // Force download so attacker-chosen mime types can't execute in-browser
+      // on the storage origin.
+      url.searchParams.set("response-content-disposition", "attachment");
       const signed = await client.sign(new Request(url, { method: "GET" }), {
         aws: { signQuery: true },
       });

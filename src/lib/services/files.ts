@@ -46,9 +46,22 @@ export type PutFileParams = {
 
 function isValidPath(path: string): boolean {
   if (!path || path.length > MAX_PATH_LENGTH) return false;
-  if (path.startsWith("/") || path.includes("\0")) return false;
-  if (path.split("/").some((segment) => segment === "..")) return false;
+  if (path.startsWith("/") || path.endsWith("/") || path.includes("\0")) return false;
+  if (path.split("/").some((segment) => segment === ".." || segment === "." || segment === "")) return false;
   return true;
+}
+
+// A record's blob_key is only trusted when it points inside this collection's
+// own prefix — record data is writable via hutch_store_records, so a forged
+// key must never reach a presign or delete.
+function ownsBlobKey(collectionId: number, key: string | undefined): key is string {
+  return typeof key === "string" && key.startsWith(`blobs/${collectionId}/`);
+}
+
+// The seam mock in tests rejects with a plain Error, so unconfigured storage
+// is detected by message, not instanceof.
+function isStorageNotConfigured(err: unknown): err is Error {
+  return err instanceof Error && /not configured/i.test(err.message);
 }
 
 function isTextLikeMime(mimeType: string | undefined): boolean {
@@ -56,12 +69,11 @@ function isTextLikeMime(mimeType: string | undefined): boolean {
   return mimeType.startsWith("text/") || mimeType === "application/json";
 }
 
-function isValidUtf8(bytes: Uint8Array): boolean {
+function decodeUtf8(bytes: Uint8Array): string | null {
   try {
-    new TextDecoder("utf-8", { fatal: true }).decode(bytes);
-    return true;
+    return new TextDecoder("utf-8", { fatal: true }).decode(bytes);
   } catch {
-    return false;
+    return null;
   }
 }
 
@@ -114,7 +126,12 @@ export async function putFile(userId: string, organizationId: string, params: Pu
   }
 
   if (typeof path !== "string" || !isValidPath(path)) {
-    return { error: "Invalid path: must be a relative path without '..' segments, under 513 characters", status: 400 };
+    return { error: "Invalid path: must be a relative path without '.' or '..' segments, 512 characters or fewer", status: 400 };
+  }
+
+  // Reject oversized base64 by string length before paying for the decode.
+  if (contentBase64 !== undefined && contentBase64.length > Math.ceil(MAX_FILE_SIZE / 3) * 4 + 4) {
+    return { error: "File exceeds the 4MB size limit", status: 413 };
   }
 
   const bytes: Uint8Array =
@@ -127,8 +144,13 @@ export async function putFile(userId: string, organizationId: string, params: Pu
     return { error: "File exceeds the 4MB size limit", status: 413 };
   }
 
-  const inline =
-    size <= MAX_INLINE_FILE_SIZE && isTextLikeMime(mimeType) && (content !== undefined || isValidUtf8(bytes));
+  const decodedText =
+    size <= MAX_INLINE_FILE_SIZE && isTextLikeMime(mimeType)
+      ? content !== undefined
+        ? content
+        : decodeUtf8(bytes)
+      : null;
+  const inline = decodedText !== null;
 
   const contentHash = createHash("sha256").update(bytes).digest("hex");
   const filename = path.split("/").pop()!;
@@ -159,8 +181,8 @@ export async function putFile(userId: string, organizationId: string, params: Pu
   let newBlobKey: string | undefined;
 
   if (inline) {
-    data.content = content !== undefined ? content : new TextDecoder("utf-8").decode(bytes);
-  } else if (existingData?.blob_key && existingData.content_hash === contentHash) {
+    data.content = decodedText!;
+  } else if (ownsBlobKey(collection.id, existingData?.blob_key) && existingData!.content_hash === contentHash) {
     // Same bytes already stored — reuse the blob, no rewrite, quota-neutral.
     data.blob_key = existingData.blob_key;
   } else {
@@ -169,9 +191,8 @@ export async function putFile(userId: string, organizationId: string, params: Pu
     try {
       await getStorage().put(newBlobKey, bytes, mime);
     } catch (err) {
-      const message = err instanceof Error ? err.message : "Blob storage write failed";
-      if (/not configured/i.test(message)) {
-        return { error: message, status: 501 };
+      if (isStorageNotConfigured(err)) {
+        return { error: err.message, status: 501 };
       }
       return { error: "Failed to write file to blob storage", status: 502 };
     }
@@ -199,9 +220,9 @@ export async function putFile(userId: string, organizationId: string, params: Pu
 
   // The replaced version pointed at a different blob — delete it and credit
   // the storage back. Best-effort: an orphaned blob must not fail the write.
-  if (existingData?.blob_key && existingData.content_hash !== contentHash) {
+  if (ownsBlobKey(collection.id, existingData?.blob_key) && existingData!.content_hash !== contentHash) {
     try {
-      await getStorage().delete([existingData.blob_key]);
+      await getStorage().delete([existingData!.blob_key!]);
       await releaseStorage({ organizationId, bytes: existingData.size });
     } catch (err) {
       console.error("Failed to delete superseded blob", existingData.blob_key, err);
@@ -223,13 +244,16 @@ export async function getFile(slug: string, userId: string, path: string) {
     return { ...toMetadata(data), content: data.content };
   }
 
+  if (!ownsBlobKey(access.collection.id, data.blob_key)) {
+    return { error: "File not found", status: 404 };
+  }
+
   let downloadUrl: string;
   try {
-    downloadUrl = await getStorage().getDownloadUrl(data.blob_key!);
+    downloadUrl = await getStorage().getDownloadUrl(data.blob_key);
   } catch (err) {
-    const message = err instanceof Error ? err.message : "Blob storage read failed";
-    if (/not configured/i.test(message)) {
-      return { error: message, status: 501 };
+    if (isStorageNotConfigured(err)) {
+      return { error: err.message, status: 501 };
     }
     return { error: "Failed to resolve file download URL", status: 502 };
   }
@@ -282,7 +306,7 @@ export async function cleanupCollectionBlobs(collectionId: number): Promise<void
 
   const keys = rows
     .map((row) => (row.data as FileData | null)?.blob_key)
-    .filter((key): key is string => typeof key === "string");
+    .filter((key): key is string => ownsBlobKey(collectionId, key));
 
   if (keys.length === 0) return;
 

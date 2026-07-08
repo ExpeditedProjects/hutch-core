@@ -305,7 +305,7 @@ export function createMcpServer(userId: string, organizationId: string, baseUrl:
       inputSchema: {
         slug: z.string().describe("Collection slug"),
         field: z.string().describe("Field name to update"),
-        type: z.enum(["text","number","boolean","date","url","email","image_url","select","multiselect","json"]).optional(),
+        type: z.enum(["text","number","boolean","date","url","email","image_url","select","multiselect","json","file"]).optional(),
         options: z.array(z.string()).optional().describe("Options for select/multiselect fields"),
         position: z.number().optional(),
         hidden: z.boolean().optional(),
