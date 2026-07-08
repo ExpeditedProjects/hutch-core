@@ -10,7 +10,8 @@ export type FieldType =
   | "image_url"
   | "select"
   | "multiselect"
-  | "json";
+  | "json"
+  | "file";
 
 export const SELECTABLE_FIELD_TYPES = ["select", "multiselect"] as const;
 export const MAX_OPTION_VALUE_LENGTH = 50;
