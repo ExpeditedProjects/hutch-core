@@ -90,7 +90,7 @@ Core is intentionally small. If you want any of these, either run [Hutch Cloud](
 
 - **Next.js 16 App Router** — one static landing page, one MCP route (`/api/mcp`), one REST seed route (`/api/v1/collections`). Everything else is deleted.
 - **Drizzle + Postgres** — records stored as JSONB, queried via containment operators and full-text search.
-- **MCP server** — collection tools, record tools (store/query/search/update/delete/status/transform), schema tools (describe/infer/update), view tools.
+- **MCP server** — collection tools, record tools (store/query/search/update/delete/status/transform), schema tools (describe/infer/update), view tools, file tools (put/get/list — small text files store inline; binary or >256KB files use S3-compatible blob storage via the optional `HUTCH_S3_*` env vars).
 - **Auth seam** at `src/lib/auth/seam.ts` — if `HUTCH_API_KEY` is set, `authenticate()` requires a matching `Authorization: Bearer <key>`; otherwise it resolves the singleton context. The seam is the only place auth lives.
 - **Singleton bootstrap** at `src/lib/auth/singleton.ts` — one user, one personal org, inserted lazily on first request.
 

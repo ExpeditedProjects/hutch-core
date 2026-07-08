@@ -2,6 +2,7 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import * as collectionService from "@/lib/services/collections";
 import * as recordService from "@/lib/services/records";
+import * as fileService from "@/lib/services/files";
 import { createView } from "@/lib/services/views";
 import { VIEW_TYPES } from "@/lib/views/types";
 
@@ -19,6 +20,8 @@ Use filter for exact/numeric/enum matches, search for free-text across string fi
 For deduplication: set unique_key via hutch_update_collection, then hutch_store_records honors on_conflict (default: replace).
 
 Views (hutch_create_view) save a table/kanban/gallery configuration on a collection so subsequent queries can reuse it.
+
+Files: hutch_put_file stores a file at a path inside a collection (auto-created with upsert-on-path), hutch_get_file reads it back, hutch_list_files lists metadata. Small UTF-8 text lives inline in the record; larger or binary content (send content_base64) goes to S3-compatible blob storage and downloads via a presigned URL — blob storage requires the HUTCH_S3_* env vars. Max file size: 4MB.
 
 This is the headless single-user Core. Multi-user sharing, organizations, invitations, and published dashboards live in Hutch Cloud (app.hutchdb.com), not here.`;
 
@@ -387,6 +390,65 @@ export function createMcpServer(userId: string, organizationId: string, baseUrl:
     }
   );
 
+  server.registerTool(
+    "hutch_put_file",
+    {
+      description: "Store a file at a path inside a collection (upserts on path; the collection auto-creates if new). Small UTF-8 text is kept inline; binary or large content (use content_base64) goes to blob storage. Max 4MB. Example: use when the user says 'save this file' or the agent wants to persist a prompt, config, or image.",
+      inputSchema: {
+        collection: z.string().describe("Collection name or slug (auto-created with upsert-on-path if new)"),
+        path: z.string().describe("Relative file path within the collection (e.g. 'prompts/reviewer.md'). No '..' segments."),
+        content: z.string().optional().describe("UTF-8 text content (use this OR content_base64, not both)"),
+        content_base64: z.string().optional().describe("Base64-encoded bytes for binary content"),
+        mime_type: z.string().optional().describe("MIME type (e.g. 'text/markdown', 'image/png'). Text-like types stay inline when small."),
+      },
+      annotations: { destructiveHint: false, idempotentHint: true, openWorldHint: false },
+    },
+    async (params) => {
+      const result = await fileService.putFile(userId, organizationId, {
+        collection: params.collection,
+        path: params.path,
+        content: params.content,
+        contentBase64: params.content_base64,
+        mimeType: params.mime_type,
+      });
+      if ('error' in result) return errorResponse(result.error as string);
+      return jsonResponse(result);
+    }
+  );
+
+  server.registerTool(
+    "hutch_get_file",
+    {
+      description: "Read a file from a collection by path. Inline text files return their content; blob files return a time-limited download_url instead. Example: use when the user asks for a stored file's contents.",
+      inputSchema: {
+        collection: z.string().describe("Collection slug"),
+        path: z.string().describe("File path within the collection"),
+      },
+      annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
+    },
+    async ({ collection, path }) => {
+      const result = await fileService.getFile(collection, userId, path);
+      if (!result) return collectionNotFound(collection);
+      if ('error' in result) return errorResponse(result.error as string);
+      return jsonResponse(result);
+    }
+  );
+
+  server.registerTool(
+    "hutch_list_files",
+    {
+      description: "List the files in a collection — path, filename, mime_type, size, and content_hash (no content). Example: use when the user asks 'what files are stored in agent-files?'.",
+      inputSchema: {
+        collection: z.string().describe("Collection slug"),
+      },
+      annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
+    },
+    async ({ collection }) => {
+      const result = await fileService.listFiles(collection, userId);
+      if (!result) return collectionNotFound(collection);
+      return jsonResponse(result);
+    }
+  );
 
   return server;
 }
