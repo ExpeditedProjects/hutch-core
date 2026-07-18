@@ -102,7 +102,11 @@ vi.mock('@/lib/storage/seam', () => ({
   })),
 }))
 
-vi.mock('@/lib/quota', () => ({
+// Partial mock: the hooks are replaced with controllable fns, but the module's
+// other exports (notably the real QuotaExceededError class) are kept so
+// instanceof detection in the service works.
+vi.mock('@/lib/quota', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/lib/quota')>()),
   beforeCreateRecord: vi.fn().mockResolvedValue(undefined),
   beforeStoreFile,
   releaseStorage,
@@ -446,6 +450,60 @@ describe('putFile — storage not configured (no HUTCH_S3_* env)', () => {
     }))
     expect(storagePut).not.toHaveBeenCalled()
     expect(createRecordsMock).toHaveBeenCalled()
+  })
+})
+
+describe('putFile — quota exceeded (Cloud overlay throws QuotaExceededError)', () => {
+  // Failing spec (TDD): the Cloud overlay's beforeStoreFile throws
+  // QuotaExceededError when the org is over its storage cap. putFile must map
+  // that rejection to { error, status: 413 } instead of throwing, and must not
+  // write the blob or the record. beforeStoreFile only runs on the blob tier,
+  // so the input here is binary base64 with a non-text mime.
+  //
+  // QuotaExceededError is referenced via dynamic import so that, until the
+  // class exists, only these tests fail — the rest of this file must pass.
+  const pngBytes = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a])
+  const pngBase64 = Buffer.from(pngBytes).toString('base64')
+
+  async function makeQuotaError(message: string): Promise<Error> {
+    const mod = (await import('@/lib/quota')) as unknown as {
+      QuotaExceededError: new (message?: string) => Error
+    }
+    return new mod.QuotaExceededError(message)
+  }
+
+  it('maps a QuotaExceededError from beforeStoreFile to { error: <message>, status: 413 }', async () => {
+    beforeStoreFile.mockRejectedValueOnce(
+      await makeQuotaError('Storage quota exceeded for this organization')
+    )
+
+    const result = await putFile('user-test', 'org-test', {
+      collection: 'agent-files',
+      path: 'logo.png',
+      contentBase64: pngBase64,
+      mimeType: 'image/png',
+    })
+
+    expect(result).toEqual({
+      error: 'Storage quota exceeded for this organization',
+      status: 413,
+    })
+  })
+
+  it('writes no blob and creates no record after the quota rejection', async () => {
+    beforeStoreFile.mockRejectedValueOnce(
+      await makeQuotaError('Storage quota exceeded for this organization')
+    )
+
+    await putFile('user-test', 'org-test', {
+      collection: 'agent-files',
+      path: 'logo.png',
+      contentBase64: pngBase64,
+      mimeType: 'image/png',
+    })
+
+    expect(storagePut).not.toHaveBeenCalled()
+    expect(createRecordsMock).not.toHaveBeenCalled()
   })
 })
 

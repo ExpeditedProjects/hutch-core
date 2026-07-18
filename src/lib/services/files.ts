@@ -5,7 +5,7 @@ import { records } from "@/lib/db/schema";
 import { findCollectionByNameInOrg, findCollectionBySlugInOrg, findAccessibleCollectionBySlug, createCollectionWithOwner, notDeleted } from "@/lib/db/queries";
 import { eq, and, sql } from "drizzle-orm";
 import { getStorage } from "@/lib/storage/seam";
-import { beforeStoreFile, releaseStorage } from "@/lib/quota";
+import { beforeStoreFile, releaseStorage, QuotaExceededError } from "@/lib/quota";
 import { createRecords } from "./records";
 import { revalidateDashboard } from "@/lib/revalidation";
 import { slugify, uniqueSlug, titleCase } from "@/lib/slugify";
@@ -186,7 +186,14 @@ export async function putFile(userId: string, organizationId: string, params: Pu
     // Same bytes already stored — reuse the blob, no rewrite, quota-neutral.
     data.blob_key = existingData.blob_key;
   } else {
-    await beforeStoreFile({ userId, organizationId, bytes: size });
+    try {
+      await beforeStoreFile({ userId, organizationId, bytes: size });
+    } catch (err) {
+      if (err instanceof QuotaExceededError) {
+        return { error: err.message, status: 413 };
+      }
+      throw err;
+    }
     newBlobKey = `blobs/${collection.id}/${nanoid()}`;
     try {
       await getStorage().put(newBlobKey, bytes, mime);

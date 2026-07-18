@@ -6,7 +6,7 @@ import { eq, and, sql, desc } from "drizzle-orm";
 import { revalidateDashboard } from "@/lib/revalidation";
 import { inferSchema, mergeSchema, detectNewFields, inferSchemaFromData, CollectionSchema } from "@/lib/schema-inference";
 import { seedAutoViews } from "./views";
-import { beforeCreateRecord } from "@/lib/quota";
+import { beforeCreateRecord, QuotaExceededError } from "@/lib/quota";
 import { RECORD_STATUSES, REINFER_COOLDOWN_MS, MAX_RECORD_SIZE, FIELD_NAME_RE } from "@/lib/constants";
 
 async function reinferCollectionSchema(collectionId: number, existingSchema: CollectionSchema | null) {
@@ -54,13 +54,20 @@ export async function createRecords(userId: string, organizationId: string, para
     totalBytes += size;
   }
 
-  await beforeCreateRecord({
-    userId,
-    organizationId,
-    collectionName,
-    count: recordsToInsert.length,
-    bytes: totalBytes,
-  });
+  try {
+    await beforeCreateRecord({
+      userId,
+      organizationId,
+      collectionName,
+      count: recordsToInsert.length,
+      bytes: totalBytes,
+    });
+  } catch (err) {
+    if (err instanceof QuotaExceededError) {
+      return { error: err.message, status: 413 };
+    }
+    throw err;
+  }
 
   // Find or create collection within the caller's org
   let collection = await findCollectionByNameInOrg(collectionName, organizationId);

@@ -1,10 +1,19 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
-const { insertReturning, updateReturning, selectLimit, dbExecute } = vi.hoisted(() => ({
+const { insertReturning, updateReturning, selectLimit, dbExecute, mockBeforeCreateRecord } = vi.hoisted(() => ({
   insertReturning: vi.fn(),
   updateReturning: vi.fn(),
   selectLimit: vi.fn(),
   dbExecute: vi.fn(),
+  mockBeforeCreateRecord: vi.fn(),
+}))
+
+// Partial mock: replace the beforeCreateRecord hook so tests can make it
+// reject, but keep the module's other exports (notably the real
+// QuotaExceededError class) so instanceof detection in the service works.
+vi.mock('@/lib/quota', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/lib/quota')>()),
+  beforeCreateRecord: mockBeforeCreateRecord,
 }))
 
 vi.mock('@/lib/db', () => ({
@@ -367,6 +376,68 @@ describe('createRecords', () => {
 
       expect(result).toEqual(expect.objectContaining({ status: 409 }))
       expect(result).not.toHaveProperty('summary')
+    })
+  })
+
+  // Failing spec (TDD): the Cloud quota overlay makes beforeCreateRecord throw
+  // QuotaExceededError when the org is over its storage cap. createRecords must
+  // map that rejection to a { error, status: 413 } result instead of throwing,
+  // and must not touch the collection or insert anything afterwards. Any OTHER
+  // error from the hook still propagates.
+  //
+  // QuotaExceededError is referenced via dynamic import so that, until the
+  // class exists, only these tests fail — the rest of this file must pass.
+  describe('quota seam error mapping (QuotaExceededError → 413)', () => {
+    async function makeQuotaError(message: string): Promise<Error> {
+      const mod = (await import('@/lib/quota')) as unknown as {
+        QuotaExceededError: new (message?: string) => Error
+      }
+      return new mod.QuotaExceededError(message)
+    }
+
+    it('returns { error: <message>, status: 413 } when beforeCreateRecord rejects with QuotaExceededError', async () => {
+      mockBeforeCreateRecord.mockRejectedValueOnce(
+        await makeQuotaError('Storage quota exceeded for this organization')
+      )
+
+      const result = await createRecords('user-test', 'org-test', {
+        collection: 'Users',
+        data: { a: 1 },
+      })
+
+      expect(result).toEqual({
+        error: 'Storage quota exceeded for this organization',
+        status: 413,
+      })
+    })
+
+    it('performs no collection lookup/creation and no insert after the quota rejection', async () => {
+      mockBeforeCreateRecord.mockRejectedValueOnce(
+        await makeQuotaError('Storage quota exceeded for this organization')
+      )
+
+      await createRecords('user-test', 'org-test', {
+        collection: 'Users',
+        records: [{ a: 1 }, { a: 2 }],
+      })
+
+      expect(findCollectionByNameInOrg).not.toHaveBeenCalled()
+      expect(findCollectionBySlugInOrg).not.toHaveBeenCalled()
+      expect(createCollectionWithOwner).not.toHaveBeenCalled()
+      const { db } = await import('@/lib/db')
+      expect(vi.mocked(db.insert)).not.toHaveBeenCalled()
+      expect(insertReturning).not.toHaveBeenCalled()
+    })
+
+    it('still propagates non-quota errors from beforeCreateRecord (not swallowed)', async () => {
+      mockBeforeCreateRecord.mockRejectedValueOnce(new Error('quota backend unreachable'))
+
+      await expect(
+        createRecords('user-test', 'org-test', { collection: 'Users', data: { a: 1 } })
+      ).rejects.toThrow('quota backend unreachable')
+
+      expect(findCollectionByNameInOrg).not.toHaveBeenCalled()
+      expect(insertReturning).not.toHaveBeenCalled()
     })
   })
 })
